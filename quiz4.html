@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Online Quiz System</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+    body {
+      min-height: 100vh;
+      background: linear-gradient(270deg, #74ebd5, #9face6);
+      background-size: 600% 600%;
+      animation: gradientBG 16s ease infinite;
+      padding: 20px;
+    }
+    @keyframes gradientBG {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    .container { max-width: 700px; margin: auto; }
+    .card {
+      background: rgba(255,255,255,0.95);
+      border-radius: 15px;
+      padding: 30px 25px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+      margin-top: 30px;
+      text-align: center;
+    }
+    h2, h3 { color: #333; }
+    .options { text-align: left; margin: 15px 0; }
+    .options label {
+      display: block;
+      background: #f1f1f1;
+      padding: 10px;
+      margin-bottom: 8px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    .options label:hover { background: #e0e0e0; }
+    .timer { font-size: 18px; font-weight: bold; color: #e74c3c; }
+    button {
+      padding: 10px 20px;
+      background: #4CAF50;
+      color: white;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 15px;
+      transition: background 0.3s;
+    }
+    button:hover { background: #45a049; }
+    input[type="text"], select {
+      padding: 10px;
+      width: 80%;
+      margin: 10px 0;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+    }
+    .result { font-weight: 600; font-size: 18px; color: #333; margin-top: 15px; }
+    #nextBtn { display: none; }
+    #progress { margin-top: 10px; color: #555; }
+    .restart { background: #dc3545; }
+    nav { display: flex; justify-content: center; gap: 20px; margin-top: 20px; }
+    nav button { background: #007BFF; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <nav>
+      <button onclick="showPage('login')">Login</button>
+      <button onclick="showPage('quiz')">Quiz</button>
+    </nav>
+
+    <div id="login" class="card">
+      <h2>🔐 Login & Select Difficulty</h2>
+      <input type="text" id="username" aria-label="Username" placeholder="Enter your name" />
+      <br>
+      <select id="difficulty">
+        <option value="easy">Easy (25 questions)</option>
+        <option value="intermediate">Intermediate (15 questions)</option>
+        <option value="hard">Hard (10 questions)</option>
+      </select>
+      <br>
+      <button onclick="startQuiz()">Start Quiz</button>
+    </div>
+
+    <div id="quiz" class="card" style="display:none">
+      <h2>🌟 Online Quiz Challenge 🌟</h2>
+      <p id="progress"></p>
+      <p id="question"></p>
+      <div class="options" id="options"></div>
+      <p class="timer">Time Left: <span id="timer">15</span>s</p>
+      <button id="submitBtn" onclick="submitAnswer()">Submit Answer</button>
+      <button id="nextBtn" onclick="loadQuestion()">Next</button>
+      <div id="result" class="result"></div>
+    </div>
+
+    <div id="leaderboard" class="card" style="display:none">
+      <h3>🏆 Leaderboard</h3>
+      <ul id="scoreList"></ul>
+      <button class="restart" onclick="resetQuiz()">Restart Quiz</button>
+    </div>
+  </div>
+
+  <script>
+    const questions = {
+      easy: [
+        { question: "What is the capital of France?", options: ["Paris", "Madrid", "Berlin", "Rome"], answer: "Paris" },
+        { question: "2 + 2 = ?", options: ["3", "4", "5", "6"], answer: "4" },
+        { question: "Which color is the sky?", options: ["Blue", "Green", "Red", "Yellow"], answer: "Blue" },
+        { question: "What is the opposite of 'hot'?", options: ["Cold", "Warm", "Cool", "Boiling"], answer: "Cold" },
+        { question: "How many days in a week?", options: ["5", "6", "7", "8"], answer: "7" },
+        { question: "What planet do we live on?", options: ["Mars", "Earth", "Jupiter", "Saturn"], answer: "Earth" },
+        { question: "What is H2O?", options: ["Water", "Oxygen", "Hydrogen", "Carbon"], answer: "Water" },
+        { question: "Sun rises in the...?", options: ["North", "South", "East", "West"], answer: "East" },
+        { question: "How many legs does a dog have?", options: ["2", "3", "4", "5"], answer: "4" },
+        { question: "Color of grass?", options: ["Green", "Blue", "Red", "Yellow"], answer: "Green" },
+        { question: "How many months in a year?", options: ["10", "11", "12", "13"], answer: "12" },
+        { question: "How many hours in a day?", options: ["24", "12", "60", "48"], answer: "24" },
+        { question: "Which is not a fruit?", options: ["Apple", "Banana", "Carrot", "Grapes"], answer: "Carrot" },
+        { question: "The color of an apple?", options: ["Red", "Green", "Blue", "Black"], answer: "Red" },
+        { question: "What shape is a wheel?", options: ["Square", "Circle", "Triangle", "Oval"], answer: "Circle" },
+        { question: "Opposite of day?", options: ["Light", "Bright", "Night", "Sun"], answer: "Night" },
+        { question: "Which is used to write?", options: ["Pen", "Spoon", "Plate", "Chair"], answer: "Pen" },
+        { question: "What do bees make?", options: ["Milk", "Honey", "Juice", "Bread"], answer: "Honey" },
+        { question: "What is frozen water called?", options: ["Steam", "Ice", "Rain", "Fog"], answer: "Ice" },
+        { question: "What do you wear on feet?", options: ["Hat", "Shirt", "Shoes", "Scarf"], answer: "Shoes" },
+        { question: "How many fingers on one hand?", options: ["3", "4", "5", "6"], answer: "5" },
+        { question: "Which is a vegetable?", options: ["Potato", "Apple", "Banana", "Orange"], answer: "Potato" },
+        { question: "Color of a banana?", options: ["Yellow", "Blue", "Red", "Black"], answer: "Yellow" },
+        { question: "Opposite of 'up'?", options: ["Down", "Left", "Right", "Back"], answer: "Down" },
+        { question: "Which animal barks?", options: ["Cat", "Dog", "Cow", "Horse"], answer: "Dog" }
+      ],
+      intermediate: [
+        { question: "What is the square root of 144?", options: ["10", "11", "12", "13"], answer: "12" },
+        { question: "Which gas do plants absorb?", options: ["Oxygen", "Nitrogen", "Carbon Dioxide", "Hydrogen"], answer: "Carbon Dioxide" },
+        { question: "Who painted Mona Lisa?", options: ["Van Gogh", "Picasso", "Da Vinci", "Michelangelo"], answer: "Da Vinci" },
+        { question: "Which is a programming language?", options: ["Python", "Snake", "Cobra", "Viper"], answer: "Python" },
+        { question: "How many continents?", options: ["5", "6", "7", "8"], answer: "7" },
+        { question: "Speed of light?", options: ["300,000 km/s", "150,000 km/s", "1,000,000 km/s", "299,792 km/s"], answer: "299,792 km/s" },
+        { question: "Capital of Japan?", options: ["Beijing", "Seoul", "Bangkok", "Tokyo"], answer: "Tokyo" },
+        { question: "Chemical symbol for Gold?", options: ["Au", "Ag", "Gd", "Go"], answer: "Au" },
+        { question: "Human body has how many bones?", options: ["206", "201", "210", "199"], answer: "206" },
+        { question: "Tallest mountain in the world?", options: ["K2", "Everest", "Kangchenjunga", "Makalu"], answer: "Everest" },
+        { question: "Largest ocean?", options: ["Atlantic", "Indian", "Pacific", "Arctic"], answer: "Pacific" },
+        { question: "Binary of 5?", options: ["101", "100", "111", "110"], answer: "101" },
+        { question: "Biggest planet?", options: ["Mars", "Jupiter", "Earth", "Saturn"], answer: "Jupiter" },
+        { question: "How many strings on guitar?", options: ["4", "5", "6", "7"], answer: "6" },
+        { question: "The human heart has how many chambers?", options: ["2", "3", "4", "5"], answer: "4" }
+      ],
+      hard: [
+        { question: "E = mc^2 was proposed by?", options: ["Newton", "Einstein", "Tesla", "Bohr"], answer: "Einstein" },
+        { question: "What is the derivative of sin(x)?", options: ["cos(x)", "-cos(x)", "-sin(x)", "tan(x)"], answer: "cos(x)" },
+        { question: "Who developed C programming?", options: ["Dennis Ritchie", "James Gosling", "Guido van Rossum", "Bjarne Stroustrup"], answer: "Dennis Ritchie" },
+        { question: "Heaviest naturally occurring element?", options: ["Uranium", "Plutonium", "Osmium", "Lead"], answer: "Uranium" },
+        { question: "Which sorting algorithm is fastest on average?", options: ["Merge Sort", "Bubble Sort", "Quick Sort", "Insertion Sort"], answer: "Quick Sort" },
+        { question: "Quantum of light is called?", options: ["Photon", "Neutron", "Proton", "Boson"], answer: "Photon" },
+        { question: "Pi is approximately?", options: ["3.14", "2.71", "1.62", "1.41"], answer: "3.14" },
+        { question: "What is entropy?", options: ["Disorder", "Energy", "Heat", "Force"], answer: "Disorder" },
+        { question: "What is RSA used for?", options: ["Encryption", "Hashing", "Sorting", "Scanning"], answer: "Encryption" },
+        { question: "Which layer in OSI handles routing?", options: ["Data Link", "Network", "Transport", "Session"], answer: "Network" }
+      ]
+    };
+
+    let quiz = [], current = 0, score = 0, timer, username = "", total = 0;
+
+    function showPage(id) {
+      ["login", "quiz", "leaderboard"].forEach(p => document.getElementById(p).style.display = "none");
+      document.getElementById(id).style.display = "block";
+    }
+
+    function shuffle(arr) {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    function startQuiz() {
+      username = document.getElementById("username").value.trim();
+      if (!username) return alert("Please enter your name");
+      const diff = document.getElementById("difficulty").value;
+      quiz = shuffle(questions[diff].map(q => ({
+        ...q,
+        options: shuffle([...q.options])
+      })));
+      total = quiz.length;
+      current = score = 0;
+      showPage("quiz");
+      loadQuestion();
+    }
+
+    function loadQuestion() {
+      clearInterval(timer);
+      if (current >= total) return endQuiz();
+      document.getElementById("result").innerText = "";
+      document.getElementById("submitBtn").style.display = "inline-block";
+      document.getElementById("nextBtn").style.display = "none";
+
+      const q = quiz[current];
+      document.getElementById("progress").innerText = `Question ${current + 1} of ${total}`;
+      document.getElementById("question").innerText = q.question;
+
+      const optDiv = document.getElementById("options");
+      optDiv.innerHTML = "";
+      q.options.forEach(opt => {
+        optDiv.innerHTML += `<label><input type="radio" name="option" value="${opt}"> ${opt}</label>`;
+      });
+
+      startTimer(15);
+    }
+
+    function startTimer(sec) {
+      let t = sec;
+      document.getElementById("timer").innerText = t;
+      timer = setInterval(() => {
+        t--;
+        document.getElementById("timer").innerText = t;
+        if (t <= 0) {
+          clearInterval(timer);
+          submitAnswer(true);
+        }
+      }, 1000);
+    }
+
+    function submitAnswer(timeout = false) {
+      clearInterval(timer);
+      document.getElementById("submitBtn").style.display = "none";
+      document.getElementById("nextBtn").style.display = "inline-block";
+
+      const selected = document.querySelector('input[name="option"]:checked');
+      const userAns = selected ? selected.value : null;
+      const correct = quiz[current].answer;
+
+      let msg;
+      if (!userAns) msg = "⏰ Time's up!";
+      else if (userAns === correct) {
+        score++;
+        msg = "✅ Correct!";
+      } else msg = `❌ Wrong! Answer: ${correct}`;
+
+      document.getElementById("result").innerText = msg;
+      document.querySelectorAll('input[name="option"]').forEach(r => r.disabled = true);
+      current++;
+    }
+
+    function endQuiz() {
+      const pct = (score / total * 100).toFixed(2);
+      saveScore(username, score, pct);
+      alert(`🎉 Quiz Over 🎉
+Name: ${username}
+Score: ${score}/${total} (${pct}%)`);
+      showLeaderboard();
+    }
+
+    function saveScore(name, sc, pct) {
+      const e = { name, score: sc, pct, date: new Date().toLocaleString() };
+      const arr = JSON.parse(localStorage.getItem("scores") || "[]");
+      arr.unshift(e);
+      localStorage.setItem("scores", JSON.stringify(arr.slice(0, 5)));
+    }
+
+    function showLeaderboard() {
+      showPage("leaderboard");
+      document.getElementById("scoreList").innerHTML = JSON
+        .parse(localStorage.getItem("scores") || "[]")
+        .map(x => `<li>${x.name} — ${x.score} pts — ${x.pct}% — ${x.date}</li>`).join("");
+    }
+
+    function resetQuiz() {
+      showPage("login");
+      document.getElementById("username").value = "";
+    }
+
+    showPage("login");
+  </script>
+</body>
+</html>
